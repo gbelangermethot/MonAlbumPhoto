@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               Int               @id @default(autoincrement())
+  email            String            @unique
+  firstName        String
+  lastName         String
+  password         String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  photos           Photo[]
+  albums           Album[]
+  privatePersons   PrivatePerson[]
+  locations        Location[]
+  groupMemberships GroupMembership[]
+  createdGroups    Group[]           @relation("GroupCreator")
+}
+
+model Photo {
+  id             Int             @id @default(autoincrement())
+  filePath       String
+  takenAt        DateTime?
+  uploadedAt     DateTime        @default(now())
+  user           User            @relation(fields: [userId], references: [id]) // annotated relation field
+  userId         Int
+  albums         Album[]
+  location       Location?       @relation(fields: [locationId], references: [id]) // annotated relation field
+  locationId     Int?
+  groupPersons   GroupPerson[]
+  privatePersons PrivatePerson[]
+}
+
+model Album {
+  id          Int      @id @default(autoincrement())
+  user        User     @relation(fields: [userId], references: [id]) // annotated relation field
+  userId      Int
+  name        String
+  description String //or text
+  group       Group?   @relation(fields: [groupId], references: [id]) // annotated relation field
+  groupId     Int?
+  createdAt   DateTime @default(now())
+  photos      Photo[]
+}
+
+model PrivatePerson {
+  id        Int     @id @default(autoincrement())
+  firstName String
+  lastName  String?
+  user      User    @relation(fields: [userId], references: [id]) // annotated relation field
+  userId    Int
+  photos    Photo[]
+}
+
+model GroupPerson {
+  id        Int     @id @default(autoincrement())
+  firstName String
+  lastName  String?
+  group     Group   @relation(fields: [groupId], references: [id]) // annotated relation field
+  groupId   Int
+  photos    Photo[]
+}
+
+model Location {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String //or text
+  address     String?
+  user        User?   @relation(fields: [userId], references: [id]) // annotated relation field
+  userId      Int?
+  group       Group?  @relation(fields: [groupId], references: [id]) // annotated relation field
+  groupId     Int?
+  photos      Photo[]
+}
+
+model Group {
+  id               Int               @id @default(autoincrement())
+  createdByUser    User              @relation("GroupCreator", fields: [createdByUserId], references: [id])
+  createdByUserId  Int
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  groupMemberships GroupMembership[]
+  albums           Album[]
+  locations        Location[]
+  groupPersons     GroupPerson[]
+}
+
+model GroupMembership {
+  id        Int      @id @default(autoincrement())
+  group     Group    @relation(fields: [groupId], references: [id]) // annotated relation field
+  groupId   Int
+  user      User     @relation(fields: [userId], references: [id]) // annotated relation field
+  userId    Int
+  role      Role
+  createdAt DateTime @default(now())
+
+  @@unique([groupId, userId])
+}
+
+enum Role {
+  VIEW
+  EDIT
+  ADMIN
+}
